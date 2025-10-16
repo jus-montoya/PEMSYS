@@ -1,68 +1,191 @@
-import java.util.ArrayList;
-import java.util.Scanner;
-import java.io.FileWriter;
+import java.util.*;
+import java.io.*;
 
 public class PEMSYS_Main {
-    static ArrayList<User> users = new ArrayList<>();
-    static Scanner sc = new Scanner(System.in);
+    static List<Scheduling> allSchedules = new ArrayList<>();
+    static List<User> users = new ArrayList<>();
+    static Scanner pem = new Scanner(System.in);
 
     public static void main(String[] args) {
-        PEMSYS_Main system = new PEMSYS_Main();
-        system.menu();
+        PEMSYS_Main app = new PEMSYS_Main();
+        app.loadCSV();
+        app.menu();
     }
 
     void menu() {
-        int choice;
-        do {
-            System.out.println("\n=== PEMSYS: Academic Organization Platform ===");
-            System.out.println("[1] Sign Up");
-            System.out.println("[2] Log In");
-            System.out.println("[3] Exit");
-            System.out.print("Enter choice: ");
-            choice = sc.nextInt();
-            sc.nextLine();
+        while (true) {
+            System.out.println("\n--- PEMSYS Main Menu ---");
+            System.out.println("1. Sign Up");
+            System.out.println("2. Log In");
+            System.out.println("3. Exit");
+            System.out.print("Choose an option: ");
+            String choice = pem.nextLine();
 
             switch (choice) {
-                case 1 -> signUp();
-                case 2 -> logIn();
-                case 3 -> System.out.println("Exiting program...");
-                default -> System.out.println("Invalid choice!");
+                case "1":
+                    signUp();
+                    break;
+                case "2":
+                    login();
+                    break;
+                case "3":
+                    saveCSV();
+                    System.out.println("Exiting PEMSYS. Goodbye!");
+                    return;
+                default:
+                    System.out.println("Invalid choice. Try again.");
             }
-        } while (choice != 3);
+        }
     }
 
     void signUp() {
         User newUser = User.signUp();
         users.add(newUser);
-        saveToCSV("users.csv", newUser.name + "," + newUser.role);
+        saveCSV();
         System.out.println("Sign-up successful! You can now log in.");
     }
 
-    void logIn() {
-        System.out.print("Enter username: ");
-        String name = sc.nextLine();
+    void login() {
+        System.out.print("Enter Name: ");
+        String name = pem.nextLine();
+        System.out.print("Enter Password: ");
+        String password = pem.nextLine();
 
         for (User u : users) {
-            if (u.name.equals(name)) {
+            if (u.logIn(name, password)) {
                 System.out.println("Login successful!");
-                if (u.role == 1 || u.role == 3) { // Organizer or Admin
-                    Organizer organizer = new Organizer(u.name, u.role);
-                    organizer.createEvent();
-                } else if (u.role == 2) { // Student
-                    Student student = new Student(u.name, u.role);
-                    student.viewSchedule();
-                }
+                redirectUser(u);
                 return;
             }
         }
-        System.out.println("User not found. Please sign up first.");
+        System.out.println("Login failed. Please try again.");
     }
-    
-    void saveToCSV(String fileName, String data) {
-        try (FileWriter writer = new FileWriter(fileName, true)) {
-            writer.write(data + "\n");
-        } catch (Exception e) {
-            System.out.println("Error saving to file: " + e.getMessage());
+
+    void redirectUser(User u) {
+        if (u instanceof Student) {
+            studentMenu((Student) u);
+        } else if (u instanceof Admin) {
+            adminMenu((Admin) u);
+        } else {
+            System.out.println("Unknown role. Access denied.");
+        }
+    }
+
+    void studentMenu(Student s) {
+        while (true) {
+            System.out.println("\n--- Student Menu ---");
+            System.out.println("1. Set Schedule");
+            System.out.println("2. Update Schedule");
+            System.out.println("3. View My Schedule");
+            System.out.println("4. Logout");
+            System.out.print("Choose an option: ");
+            String choice = pem.nextLine();
+
+            switch (choice) {
+                case "1":
+                    s.setSchedule(allSchedules);
+                    saveCSV();
+                    break;
+                case "2":
+                    s.updateSchedule();
+                    saveCSV();
+                    break;
+                case "3":
+                    s.viewSchedule();
+                    break;
+                case "4":
+                    saveCSV();
+                    return;
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+
+    void adminMenu(Admin a) {
+        while (true) {
+            System.out.println("\n--- Admin Menu ---");
+            System.out.println("1. Create Event");
+            System.out.println("2. Edit Event");
+            System.out.println("3. View All Schedules");
+            System.out.println("4. Logout");
+            System.out.print("Choose an option: ");
+            String choice = pem.nextLine();
+
+            switch (choice) {
+                case "1":
+                    a.createEvent(allSchedules);
+                    saveCSV();
+                    break;
+                case "2":
+                    a.editEvent();
+                    saveCSV();
+                    break;
+                case "3":
+                    a.sched.displayAllSchedules(allSchedules);
+                    break;
+                case "4":
+                    saveCSV();
+                    return;
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+
+    void saveCSV() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter("PEMSYS_Data.csv"))) {
+            pw.println("USERS");
+            for (User u : users) {
+                pw.println(u.role + "," + u.name + "," + u.password);
+            }
+            pw.println("SCHEDULES");
+            for (Scheduling s : allSchedules) {
+                pw.println(s.eventType + "," + s.date + "," + s.time + "," + s.venue);
+            }
+            System.out.println("Data saved to PEMSYS_Data.csv");
+        } catch (IOException e) {
+            System.out.println("Error saving CSV: " + e.getMessage());
+        }
+    }
+
+    void loadCSV() {
+        try (BufferedReader br = new BufferedReader(new FileReader("PEMSYS_Data.csv"))) {
+            String line;
+            boolean userSection = false, scheduleSection = false;
+
+            while ((line = br.readLine()) != null) {
+                if (line.equals("USERS")) {
+                    userSection = true;
+                    scheduleSection = false;
+                    continue;
+                } else if (line.equals("SCHEDULES")) {
+                    userSection = false;
+                    scheduleSection = true;
+                    continue;
+                }
+
+                if (userSection && !line.isEmpty()) {
+                    String[] parts = line.split(",");
+                    int role = Integer.parseInt(parts[0]);
+                    String name = parts[1];
+                    String password = parts.length > 2 ? parts[2] : "";
+                    if (role == 1) users.add(new Admin(role, name, password));
+                    else if (role == 2) users.add(new Student(role, name, password));
+                    else if (role == 3) users.add(new Admin(role, name, password));
+                } else if (scheduleSection && !line.isEmpty()) {
+                    String[] parts = line.split(",");
+                    Scheduling s = new Scheduling();
+                    s.eventType = parts[0];
+                    s.date = parts[1];
+                    s.time = parts[2];
+                    s.venue = parts.length > 3 ? parts[3] : "";
+                    allSchedules.add(s);
+                }
+            }
+            System.out.println("Data loaded from PEMSYS_Data.csv");
+        } catch (IOException e) {
+            System.out.println("No CSV data found, starting fresh.");
         }
     }
 }
