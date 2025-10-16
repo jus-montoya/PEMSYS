@@ -1,125 +1,68 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.io.FileWriter;
 
 public class PEMSYS_Main {
-    static List<Scheduling> allSchedules = new ArrayList<>();
-    static List<User> users = new ArrayList<>();
-    static Scanner pem = new Scanner(System.in);
+    static ArrayList<User> users = new ArrayList<>();
+    static Scanner sc = new Scanner(System.in);
 
     public static void main(String[] args) {
-        PEMSYS_Main app = new PEMSYS_Main();
-        app.menu();
+        PEMSYS_Main system = new PEMSYS_Main();
+        system.menu();
     }
 
     void menu() {
-        while (true) {
-            System.out.println("\n--- PEMSYS Main Menu ---");
-            System.out.println("1. Sign Up");
-            System.out.println("2. Log In");
-            System.out.println("3. Exit");
-            System.out.print("Choose an option: ");
-            String choice = pem.nextLine();
+        int choice;
+        do {
+            System.out.println("\n=== PEMSYS: Academic Organization Platform ===");
+            System.out.println("[1] Sign Up");
+            System.out.println("[2] Log In");
+            System.out.println("[3] Exit");
+            System.out.print("Enter choice: ");
+            choice = sc.nextInt();
+            sc.nextLine();
 
             switch (choice) {
-                case "1":
-                    signUp();
-                    break;
-                case "2":
-                    login();
-                    break;
-                case "3":
-                    System.out.println("Exiting PEMSYS. Goodbye!");
-                    return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
+                case 1 -> signUp();
+                case 2 -> logIn();
+                case 3 -> System.out.println("Exiting program...");
+                default -> System.out.println("Invalid choice!");
             }
-        }
+        } while (choice != 3);
     }
 
     void signUp() {
         User newUser = User.signUp();
         users.add(newUser);
+        saveToCSV("users.csv", newUser.name + "," + newUser.role);
         System.out.println("Sign-up successful! You can now log in.");
     }
 
-    void login() {
-        System.out.print("Enter Name: ");
-        String name = pem.nextLine();
-        System.out.print("Enter Password: ");
-        String password = pem.nextLine();
+    void logIn() {
+        System.out.print("Enter username: ");
+        String name = sc.nextLine();
 
         for (User u : users) {
-            if (u.logIn(name, password)) {
+            if (u.name.equals(name)) {
                 System.out.println("Login successful!");
-                redirectUser(u);
+                if (u.role == 1 || u.role == 3) { // Organizer or Admin
+                    Organizer organizer = new Organizer(u.name, u.role);
+                    organizer.createEvent();
+                } else if (u.role == 2) { // Student
+                    Student student = new Student(u.name, u.role);
+                    student.viewSchedule();
+                }
                 return;
             }
         }
-        System.out.println("Login failed. Please try again.");
+        System.out.println("User not found. Please sign up first.");
     }
-
-    void redirectUser(User u) {
-        if (u instanceof Student) {
-            studentMenu((Student) u);
-        } else if (u instanceof Admin) {
-            adminMenu((Admin) u);
-        } else {
-            System.out.println("Unknown role. Access denied.");
-        }
-    }
-
-    void studentMenu(Student s) {
-        while (true) {
-            System.out.println("\n--- Student Menu ---");
-            System.out.println("1. Set Schedule");
-            System.out.println("2. Update Schedule");
-            System.out.println("3. View My Schedule");
-            System.out.println("4. Logout");
-            System.out.print("Choose an option: ");
-            String choice = pem.nextLine();
-
-            switch (choice) {
-                case "1":
-                    s.setSchedule(allSchedules);
-                    break;
-                case "2":
-                    s.updateSchedule();
-                    break;
-                case "3":
-                    s.viewSchedule();
-                    break;
-                case "4":
-                    return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
-            }
-        }
-    }
-
-    void adminMenu(Admin a) {
-        while (true) {
-            System.out.println("\n--- Admin Menu ---");
-            System.out.println("1. Create Event");
-            System.out.println("2. Edit Event");
-            System.out.println("3. View All Schedules");
-            System.out.println("4. Logout");
-            System.out.print("Choose an option: ");
-            String choice = pem.nextLine();
-
-            switch (choice) {
-                case "1":
-                    a.createEvent(allSchedules);
-                    break;
-                case "2":
-                    a.editEvent();
-                    break;
-                case "3":
-                    a.sched.displayAllSchedules(allSchedules);
-                    break;
-                case "4":
-                    return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
-            }
+    
+    void saveToCSV(String fileName, String data) {
+        try (FileWriter writer = new FileWriter(fileName, true)) {
+            writer.write(data + "\n");
+        } catch (Exception e) {
+            System.out.println("Error saving to file: " + e.getMessage());
         }
     }
 }
