@@ -22,18 +22,14 @@ public class PEMSYS_Main {
             String choice = pem.nextLine();
 
             switch (choice) {
-                case "1":
-                    signUp();
-                    break;
-                case "2":
-                    login();
-                    break;
-                case "3":
+                case "1" -> signUp();
+                case "2" -> login();
+                case "3" -> {
                     saveCSV();
                     System.out.println("Exiting PEMSYS. Goodbye!");
                     return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
+                }
+                default -> System.out.println("Invalid choice. Try again.");
             }
         }
     }
@@ -62,10 +58,12 @@ public class PEMSYS_Main {
     }
 
     void redirectUser(User u) {
-        if (u instanceof Student) {
-            studentMenu((Student) u);
-        } else if (u instanceof Admin) {
-            adminMenu((Admin) u);
+        if (u instanceof Student s) {
+            studentMenu(s);
+        } else if (u instanceof Admin a) {
+            adminMenu(a);
+        } else if (u instanceof Organizer o) {
+            organizerMenu(o);
         } else {
             System.out.println("Unknown role. Access denied.");
         }
@@ -82,22 +80,11 @@ public class PEMSYS_Main {
             String choice = pem.nextLine();
 
             switch (choice) {
-                case "1":
-                    s.setSchedule(allSchedules);
-                    saveCSV();
-                    break;
-                case "2":
-                    s.updateSchedule();
-                    saveCSV();
-                    break;
-                case "3":
-                    s.viewSchedule();
-                    break;
-                case "4":
-                    saveCSV();
-                    return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
+                case "1" -> { s.setSchedule(allSchedules); saveCSV(); }
+                case "2" -> { s.updateSchedule(); saveCSV(); }
+                case "3" -> s.viewSchedule();
+                case "4" -> { saveCSV(); return; }
+                default -> System.out.println("Invalid choice. Try again.");
             }
         }
     }
@@ -105,6 +92,22 @@ public class PEMSYS_Main {
     void adminMenu(Admin a) {
         while (true) {
             System.out.println("\n--- Admin Menu ---");
+            System.out.println("1. View All Schedules");
+            System.out.println("2. Logout");
+            System.out.print("Choose an option: ");
+            String choice = pem.nextLine();
+
+            switch (choice) {
+                case "1" -> a.sched.displayAllSchedules(allSchedules);
+                case "2" -> { saveCSV(); return; }
+                default -> System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+
+    void organizerMenu(Organizer o) {
+        while (true) {
+            System.out.println("\n--- Organizer Menu (" + o.getOrganization() + ") ---");
             System.out.println("1. Create Event");
             System.out.println("2. Edit Event");
             System.out.println("3. View All Schedules");
@@ -113,22 +116,11 @@ public class PEMSYS_Main {
             String choice = pem.nextLine();
 
             switch (choice) {
-                case "1":
-                    a.createEvent(allSchedules);
-                    saveCSV();
-                    break;
-                case "2":
-                    a.editEvent();
-                    saveCSV();
-                    break;
-                case "3":
-                    a.sched.displayAllSchedules(allSchedules);
-                    break;
-                case "4":
-                    saveCSV();
-                    return;
-                default:
-                    System.out.println("Invalid choice. Try again.");
+                case "1" -> { o.createEvent(allSchedules); saveCSV(); }
+                case "2" -> { o.editEvent(); saveCSV(); }
+                case "3" -> o.viewAllSchedules(allSchedules);
+                case "4" -> { saveCSV(); return; }
+                default -> System.out.println("Invalid choice. Try again.");
             }
         }
     }
@@ -137,7 +129,10 @@ public class PEMSYS_Main {
         try (PrintWriter pw = new PrintWriter(new FileWriter("PEMSYS_Data.csv"))) {
             pw.println("USERS");
             for (User u : users) {
-                pw.println(u.role + "," + u.name + "," + u.password);
+                if (u instanceof Organizer o)
+                    pw.println(u.getRole() + "," + u.getName() + "," + u.getPassword() + "," + o.getOrganization());
+                else
+                    pw.println(u.getRole() + "," + u.getName() + "," + u.getPassword());
             }
             pw.println("SCHEDULES");
             for (Scheduling s : allSchedules) {
@@ -170,9 +165,13 @@ public class PEMSYS_Main {
                     int role = Integer.parseInt(parts[0]);
                     String name = parts[1];
                     String password = parts.length > 2 ? parts[2] : "";
-                    if (role == 1) users.add(new Admin(role, name, password));
-                    else if (role == 2) users.add(new Student(role, name, password));
-                    else if (role == 3) users.add(new Admin(role, name, password));
+                    if (role == 1) {
+                        String org = parts.length > 3 ? parts[3] : "Unknown Organization";
+                        users.add(new Organizer(role, name, password, org));
+                    } else if (role == 2)
+                        users.add(new Student(role, name, password));
+                    else if (role == 3)
+                        users.add(new Admin(role, name, password));
                 } else if (scheduleSection && !line.isEmpty()) {
                     String[] parts = line.split(",");
                     Scheduling s = new Scheduling();
