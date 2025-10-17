@@ -2,7 +2,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Organizer extends User {
-    private String organization; // encapsulated field
+    private String organization; 
     private Scheduling sched = new Scheduling();
 
     public Organizer(int role, String name, String password, String organization) {
@@ -32,3 +32,4 @@ public class Organizer extends User {
         sched.displayAllSchedules(allSchedules);
     }
 }
+
