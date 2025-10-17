@@ -15,7 +15,7 @@ public class User {
         Scanner pem = new Scanner(System.in);
 
         System.out.print("---- Sign Up ----");
-        System.out.print("Enter Role (1 = Organizer, 2 = Student, 3 = Admin): ");
+        System.out.print("\nEnter Role (1 = Organizer, 2 = Student, 3 = Admin): ");
         int role = pem.nextInt(); pem.nextLine();
 
         System.out.print("Enter Name: ");
