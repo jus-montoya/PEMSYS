@@ -11,7 +11,6 @@ public class User {
         this.password = password;
     }
 
-
     public int getRole() {
         return role;
     }
@@ -56,15 +55,30 @@ public class User {
             int orgChoice = pem.nextInt();
             pem.nextLine();
 
-            String organization = switch (orgChoice) {
-                case 1 -> "Code Geeks";
-                case 2 -> "GDG";
-                case 3 -> "MAFIA";
-                case 4 -> "AWS";
-                case 5 -> "ACCESS POINT";
-                case 6 -> "SOC STUDENT COUNCIL";
-                default -> "Unknown Organization";
-            };
+            String organization;
+            switch (orgChoice) {
+                case 1:
+                    organization = "Code Geeks";
+                    break;
+                case 2:
+                    organization = "GDG";
+                    break;
+                case 3:
+                    organization = "MAFIA";
+                    break;
+                case 4:
+                    organization = "AWS";
+                    break;
+                case 5:
+                    organization = "ACCESS POINT";
+                    break;
+                case 6:
+                    organization = "SOC STUDENT COUNCIL";
+                    break;
+                default:
+                    organization = "Unknown Organization";
+                    break;
+            }
 
             System.out.print("Enter Username: ");
             String name = pem.nextLine();
@@ -79,11 +93,14 @@ public class User {
         System.out.print("Enter Password: ");
         String password = pem.nextLine();
 
-        return switch (role) {
-            case 2 -> new Student(role, name, password);
-            case 3 -> new Admin(role, name, password);
-            default -> new User(role, name, password);
-        };
+        switch (role) {
+            case 2:
+                return new Student(role, name, password);
+            case 3:
+                return new Admin(role, name, password);
+            default:
+                return new User(role, name, password);
+        }
     }
 
     public boolean logIn(String name, String password) {
